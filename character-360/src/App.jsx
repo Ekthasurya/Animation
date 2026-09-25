@@ -1,7 +1,6 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useGLTF } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import { useEffect, useRef } from "react";
-import * as THREE from "three";
 
 function Character() {
   const characterRef = useRef();
@@ -10,7 +9,7 @@ function Character() {
     "/models/one_piece_monkey_d_luffy.glb"
   );
 
-  // Store keyboard state
+  // Keyboard state
   const keys = useRef({
     w: false,
     a: false,
@@ -18,152 +17,77 @@ function Character() {
     d: false,
   });
 
-  // -------------------------------
-  // Keyboard Events
-  // -------------------------------
-
+  // Detect keyboard
   useEffect(() => {
     const handleKeyDown = (event) => {
       const key = event.key.toLowerCase();
 
-      if (key === "w") {
-        keys.current.w = true;
-      }
-
-      if (key === "a") {
-        keys.current.a = true;
-      }
-
-      if (key === "s") {
-        keys.current.s = true;
-      }
-
-      if (key === "d") {
-        keys.current.d = true;
-      }
+      if (key === "w") keys.current.w = true;
+      if (key === "a") keys.current.a = true;
+      if (key === "s") keys.current.s = true;
+      if (key === "d") keys.current.d = true;
     };
 
     const handleKeyUp = (event) => {
       const key = event.key.toLowerCase();
 
-      if (key === "w") {
-        keys.current.w = false;
-      }
-
-      if (key === "a") {
-        keys.current.a = false;
-      }
-
-      if (key === "s") {
-        keys.current.s = false;
-      }
-
-      if (key === "d") {
-        keys.current.d = false;
-      }
+      if (key === "w") keys.current.w = false;
+      if (key === "a") keys.current.a = false;
+      if (key === "s") keys.current.s = false;
+      if (key === "d") keys.current.d = false;
     };
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
     return () => {
-      window.removeEventListener(
-        "keydown",
-        handleKeyDown
-      );
-
-      window.removeEventListener(
-        "keyup",
-        handleKeyUp
-      );
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
     };
   }, []);
 
-  // -------------------------------
   // Movement
-  // -------------------------------
-
   useFrame((state, delta) => {
     const character = characterRef.current;
 
     if (!character) return;
 
-    const direction = new THREE.Vector3();
+    let x = 0;
+    let z = 0;
 
-    // W
+    // W = forward
     if (keys.current.w) {
-      direction.z -= 1;
+      z -= 1;
     }
 
-    // S
+    // S = backward
     if (keys.current.s) {
-      direction.z += 1;
+      z += 1;
     }
 
-    // A
+    // A = left
     if (keys.current.a) {
-      direction.x -= 1;
+      x -= 1;
     }
 
-    // D
+    // D = right
     if (keys.current.d) {
-      direction.x += 1;
+      x += 1;
     }
 
-    // -------------------------------
-    // Move Character
-    // -------------------------------
+    // Character is moving
+    if (x !== 0 || z !== 0) {
+      // Normalize diagonal movement
+      const length = Math.sqrt(x * x + z * z);
 
-    if (direction.lengthSq() > 0) {
-      direction.normalize();
+      x /= length;
+      z /= length;
 
-      const speed = 4;
+      const speed = 3;
 
-      character.position.x +=
-        direction.x * speed * delta;
-
-      character.position.z +=
-        direction.z * speed * delta;
-
-      // -------------------------------
-      // Rotate Character
-      // -------------------------------
-
-      const targetRotation =
-        Math.atan2(
-          direction.x,
-          direction.z
-        );
-
-      // Smooth rotation
-      character.rotation.y = THREE.MathUtils.lerp(
-        character.rotation.y,
-        targetRotation,
-        8 * delta
-      );
+      character.position.x += x * speed * delta;
+      character.position.z += z * speed * delta;
     }
-
-    // -------------------------------
-    // Camera Follow
-    // -------------------------------
-
-    const targetCameraPosition = new THREE.Vector3(
-      character.position.x,
-      character.position.y + 3,
-      character.position.z + 7
-    );
-
-    state.camera.position.lerp(
-      targetCameraPosition,
-      5 * delta
-    );
-
-    // Camera looks at character
-    state.camera.lookAt(
-      character.position.x,
-      character.position.y + 1,
-      character.position.z
-    );
   });
 
   return (
@@ -180,34 +104,36 @@ function App() {
   return (
     <Canvas
       camera={{
-        position: [0, 3, 7],
+        position: [0, 2, 5],
         fov: 50,
       }}
     >
-      {/* Lights */}
+      {/* Background */}
+      <color attach="background" args={["#202020"]} />
 
-      <ambientLight intensity={1.5} />
+      {/* Lighting */}
+      <ambientLight intensity={2} />
 
       <directionalLight
         position={[5, 10, 5]}
-        intensity={3}
+        intensity={4}
       />
 
-      {/* Ground */}
-
+      {/* Floor */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -1, 0]}
       >
-        <planeGeometry args={[100, 100]} />
+        <planeGeometry args={[50, 50]} />
 
-        <meshStandardMaterial
-          color="lightgray"
-        />
+        <meshStandardMaterial color="lightgray" />
       </mesh>
 
-      {/* Character */}
-
+      {/* Luffy */}
       <Character />
+
+      {/* Camera control */}
+      <OrbitControls />
     </Canvas>
   );
 }
